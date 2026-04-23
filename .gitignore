@@ -1,0 +1,27 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# GEE credentials
+~/.config/earthengine/
+
+# Outputs (tracked via .gitkeep; actual files excluded)
+outputs/figures/*
+outputs/csv/*
+!outputs/figures/.gitkeep
+!outputs/csv/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
