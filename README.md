@@ -60,6 +60,7 @@ sermilik-sea-ice/
 │   └── csv/                       # Ice area and ERA5 time series tables
 │
 └── docs/
+    ├── setup_guides.md            # Detailed setup guide for google colab and local workflow
     └── workpackages.md            # Detailed task plan by work package
 ```
 
