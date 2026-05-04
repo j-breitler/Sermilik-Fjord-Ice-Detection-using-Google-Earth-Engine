@@ -1,11 +1,12 @@
 # 🧊 Sea Ice Detection in Sermilik Fjord, SE Greenland
 
 > Mapping sea ice cover time series using Sentinel-1, Sentinel-2, and ERA5 climate data via the Google Earth Engine Python API.
+> VERY MUCH WORK IN PROGRESS!
 
 **Authors:** <!-- Your names here -->  
 **Institution:** <!-- Your university / department -->  
 **Course:** <!-- Seminar / module name -->  
-**Year:** 2025
+**Year:** 2026
 
 ---
 
