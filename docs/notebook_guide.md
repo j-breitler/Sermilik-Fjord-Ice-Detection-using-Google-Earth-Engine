@@ -292,34 +292,40 @@ var aoi = ee.Geometry.Rectangle([-38.4337, 65.6222, -36.6462, 66.4792]);
 var aoi = ee.Geometry.Rectangle([-38.4337, 65.6222, -36.6462, 66.4792]);
 
 // ---------- WINTER ----------
+// Use .median() to mosaic all scenes in the window — a single S2 tile (~110 km swath)
+// does not cover the full AOI, so .first() would leave large gaps.
 var s2_winter = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
   .filterBounds(aoi)
   .filterDate('2021-01-01', '2021-04-30')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .sort('CLOUDY_PIXEL_PERCENTAGE')
-  .first();
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .median()
+  .clip(aoi);
 
 var s1_winter = ee.ImageCollection('COPERNICUS/S1_GRD')
   .filterBounds(aoi)
   .filterDate('2021-01-01', '2021-04-30')
   .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'HH'))
   .filter(ee.Filter.eq('instrumentMode', 'IW'))
-  .first();
+  .select(['HH', 'HV'])
+  .mean()
+  .clip(aoi);
 
 // ---------- SUMMER ----------
 var s2_summer = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
   .filterBounds(aoi)
   .filterDate('2021-07-01', '2021-09-30')
-  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .sort('CLOUDY_PIXEL_PERCENTAGE')
-  .first();
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30))
+  .median()
+  .clip(aoi);
 
 var s1_summer = ee.ImageCollection('COPERNICUS/S1_GRD')
   .filterBounds(aoi)
   .filterDate('2021-07-01', '2021-09-30')
   .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'HH'))
   .filter(ee.Filter.eq('instrumentMode', 'IW'))
-  .first();
+  .select(['HH', 'HV'])
+  .mean()
+  .clip(aoi);
 
 // ---------- NDSI ----------
 var ndsi_winter = s2_winter.normalizedDifference(['B3', 'B11']);
@@ -333,11 +339,6 @@ Map.addLayer(s1_winter.select('HH'), {min:-25, max:0, palette:['black','white']}
 Map.addLayer(s2_summer,  {bands:['B4','B3','B2'], min:0, max:3000}, 'S2 RGB — Summer', false);
 Map.addLayer(ndsi_summer,{min:-0.5, max:1, palette:['#1a6faf','white']}, 'NDSI — Summer', false);
 Map.addLayer(s1_summer.select('HH'), {min:-25, max:0, palette:['black','white']}, 'S1 HH — Summer', false);
-
-print('Winter S2 date:', s2_winter.date().format('YYYY-MM-dd'));
-print('Winter S1 date:', s1_winter.date().format('YYYY-MM-dd'));
-print('Summer S2 date:', s2_summer.date().format('YYYY-MM-dd'));
-print('Summer S1 date:', s1_summer.date().format('YYYY-MM-dd'));
 ```
 
 Click **Run**. The map should show Sermilik Fjord with the S2 true-colour layer active.
