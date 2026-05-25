@@ -69,6 +69,7 @@ sermilik-sea-ice/
 │
 └── docs/
     ├── setup_guides.md                 # Setup guide for Colab and local workflow
+    ├── notebook_guide.md               # Per-notebook run instructions + GEE polygon digitising
     └── workpackages.md                 # Task plan by work package and owner
 ```
 
@@ -142,6 +143,10 @@ Start with `01_data_acquisition.ipynb` (shared), then follow your track:
 - **Both tracks merge at:** `04_timeseries.ipynb`
 
 Each notebook imports functions from `src/` and saves outputs to `outputs/`.
+
+See [`docs/notebook_guide.md`](docs/notebook_guide.md) for per-notebook run instructions,
+lines to edit, expected outputs, and a step-by-step guide for digitising training polygons
+in GEE Code Editor.
 
 ---
 
