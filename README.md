@@ -12,11 +12,11 @@
 
 ## Overview
 
-This project uses the Google Earth Engine (GEE) Python API to detect and map sea ice extent in Sermilik Fjord, southeast Greenland, over a multi-year time series (2019–2024). The workflow combines:
+This project uses the Google Earth Engine (GEE) Python API to detect and map sea ice extent in Sermilik Fjord, southeast Greenland, over a multi-year time series (2019–2024). The workflow runs two parallel classification tracks that merge into a single fused time series:
 
-- **Sentinel-2** optical imagery (10 m) for NDSI-based ice classification and Random Forest supervised classification
-- **Sentinel-1** SAR imagery (10 m) for cloud-independent backscatter thresholding
-- **S1 + S2 fusion** to maximise temporal coverage under SE Greenland's high cloud frequency
+- **Sentinel-2 optical track** — NDSI thresholding and Random Forest classification on cloud-free scenes
+- **Sentinel-1 SAR track** — GLCM texture features + Support Vector Machine classification following Williams & Swirad (2025), adapted from their Hornsund fjord study; works year-round independent of cloud cover and polar night
+- **S1 + S2 fusion** — S2 classification used where cloud-free, S1 fills the remaining gaps to maximise temporal coverage under SE Greenland's persistently high cloud frequency
 - **ERA5** reanalysis climate data for correlation with observed ice dynamics
 
 The project is structured as a reproducible Python/Jupyter notebook pipeline and forms the basis of a Master's-level seminar paper.
