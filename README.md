@@ -34,50 +34,61 @@ The project is structured as a reproducible Python/Jupyter notebook pipeline and
 ```
 sermilik-sea-ice/
 ├── README.md
-├── requirements.txt               # Python dependencies
-├── .env.example                   # Template for API keys (e.g. CDS for ERA5)
+├── requirements.txt                    # Python dependencies
+├── .env.example                        # Template for GEE project ID
 │
 ├── data/
 │   └── aoi/
-│       └── sermilik_fjord.geojson # Study area polygon
+│       └── Sermilik_Fjord_Boundary.geojson
 │
 ├── notebooks/
-│   ├── 01_data_acquisition.ipynb  # WP1: S1, S2, ERA5 collection setup
-│   ├── 02_preprocessing.ipynb     # WP2: cloud masking, speckle filter, NDSI
-│   ├── 03_classification.ipynb    # WP3: RF classifier, SAR threshold, fusion
-│   ├── 04_timeseries.ipynb        # WP4: ice area time series & anomaly detection
-│   ├── 05_climate_analysis.ipynb  # WP5: ERA5 correlation & lag analysis
-│   └── 06_validation.ipynb        # WP6: accuracy assessment & confusion matrix
+│   ├── 01_data_acquisition.ipynb       # WP1: S1, S2, ERA5 collection setup (shared)
+│   │
+│   ├── 02a_preprocessing_s2.ipynb      # WP2a: S2 cloud masking + NDSI (optical track)
+│   ├── 02b_preprocessing_s1.ipynb      # WP2b: S1 speckle filter + GLCM features (SAR track)
+│   │
+│   ├── 03a_classification_s2.ipynb     # WP3a: NDSI threshold + Random Forest (optical track)
+│   ├── 03b_classification_s1.ipynb     # WP3b: GLCM + SVM / Hornsund method (SAR track)
+│   │
+│   ├── 04_timeseries.ipynb             # WP4: fusion + ice area time series (shared)
+│   ├── 05_climate_analysis.ipynb       # WP5: ERA5 correlation & lag analysis (shared)
+│   └── 06_validation.ipynb             # WP6: accuracy assessment & confusion matrix
 │
 ├── src/
 │   ├── __init__.py
-│   ├── preprocessing.py           # Cloud masking, speckle filter, NDSI functions
-│   ├── classification.py          # NDSI threshold, RF, SAR threshold, fusion
-│   ├── timeseries.py              # Ice area calculation, anomaly detection
-│   └── utils.py                   # AOI loading, date helpers, export wrappers
+│   ├── preprocessing_s2.py             # Cloud masking, NDSI
+│   ├── preprocessing_s1.py             # Speckle filter, GLCM texture features
+│   ├── classification_s2.py            # NDSI threshold, Random Forest
+│   ├── classification_s1.py            # SVM (Hornsund method), binary collapse
+│   ├── timeseries.py                   # Ice area calculation, anomaly detection
+│   └── utils.py                        # AOI loading, date helpers, export wrappers
 │
 ├── outputs/
-│   ├── figures/                   # Exported maps and charts
-│   └── csv/                       # Ice area and ERA5 time series tables
+│   ├── figures/                        # Exported maps and charts
+│   └── csv/                            # Ice area and ERA5 time series tables
 │
 └── docs/
-    ├── setup_guides.md            # Detailed setup guide for google colab and local workflow
-    └── workpackages.md            # Detailed task plan by work package
+    ├── setup_guides.md                 # Setup guide for Colab and local workflow
+    └── workpackages.md                 # Task plan by work package and owner
 ```
 
 ---
 
 ## Work Packages
 
-| WP | Title | Notebook | Duration |
-|----|-------|----------|----------|
-| WP1 | Study area & data acquisition | `01_data_acquisition.ipynb` | 1–2 weeks |
-| WP2 | Pre-processing & harmonisation | `02_preprocessing.ipynb` | 2 weeks |
-| WP3 | Sea ice / open water classification | `03_classification.ipynb` | 2–3 weeks |
-| WP4 | Time series analysis | `04_timeseries.ipynb` | 1–2 weeks |
-| WP5 | Climate comparison | `05_climate_analysis.ipynb` | 1–2 weeks |
-| WP6 | Validation & accuracy assessment | `06_validation.ipynb` | 1 week |
-| WP7 | Writing & visualisation | — | 2 weeks |
+The classification is split into two parallel tracks that merge at WP4.
+
+| WP | Title | Notebook | Track |
+|----|-------|----------|-------|
+| WP1 | Study area & data acquisition | `01_data_acquisition.ipynb` | shared |
+| WP2a | Sentinel-2 pre-processing | `02a_preprocessing_s2.ipynb` | optical |
+| WP2b | Sentinel-1 pre-processing | `02b_preprocessing_s1.ipynb` | SAR |
+| WP3a | Optical ice classification | `03a_classification_s2.ipynb` | optical |
+| WP3b | SAR classification (Hornsund) | `03b_classification_s1.ipynb` | SAR |
+| WP4 | Time series & fusion | `04_timeseries.ipynb` | shared |
+| WP5 | Climate comparison | `05_climate_analysis.ipynb` | shared |
+| WP6 | Validation & accuracy assessment | `06_validation.ipynb` | shared |
+| WP7 | Writing & visualisation | — | shared |
 
 See [`docs/workpackages.md`](docs/workpackages.md) for the full task-level breakdown.
 
@@ -122,9 +133,15 @@ Copy `.env.example` to `.env` and fill in your project ID:
 cp .env.example .env
 ```
 
-### 6. Run the notebooks in order
+### 6. Run the notebooks
 
-Start with `notebooks/01_data_acquisition.ipynb` and work through sequentially. Each notebook imports functions from `src/` and saves outputs to `outputs/`.
+Start with `01_data_acquisition.ipynb` (shared), then follow your track:
+
+- **Optical track:** `02a` → `03a`
+- **SAR track:** `02b` → `03b`
+- **Both tracks merge at:** `04_timeseries.ipynb`
+
+Each notebook imports functions from `src/` and saves outputs to `outputs/`.
 
 ---
 
@@ -143,11 +160,24 @@ Start with `notebooks/01_data_acquisition.ipynb` and work through sequentially. 
 
 ### Classification approach
 
-Sea ice classification uses a two-track approach depending on cloud cover:
+Sea ice classification uses two parallel tracks that are fused into a single time series.
 
-- **Clear sky (Sentinel-2 available):** NDSI thresholding (NDSI > 0.4) combined with a Random Forest classifier trained on manually digitised polygons for four classes: sea ice, open water, ice mélange, and land. NDSI is computed as `(B3 – B11) / (B3 + B11)`.
-- **Cloudy conditions (Sentinel-1 fallback):** VV backscatter thresholding. Sea ice typically shows higher backscatter than calm open water in C-band SAR. A threshold of approximately –15 dB is applied to the VV band after speckle filtering.
-- **Fusion:** A per-pixel conditional fusion layer combines both classifications, using S2 where available and S1 otherwise, to maximise temporal coverage.
+**Optical track (Sentinel-2):**
+NDSI thresholding (`(B3 – B11) / (B3 + B11) ≥ 0.4`) provides a fast baseline.
+A Random Forest classifier trained on manually digitised polygons (4 classes: open water,
+drift ice, landfast ice, glacier ice) provides a supervised alternative.
+Limited to cloud-free scenes — typically absent for 3–5 months per year.
+
+**SAR track (Sentinel-1) — following Williams & Swirad (2025):**
+Gray Level Co-occurrence Matrix (GLCM) texture features (variance, contrast, entropy, ASM)
+are computed on both HH and HV bands, forming a 10-band composite per image.
+A Support Vector Machine (SVM, RBF kernel) is trained on this composite to produce a
+multi-class ice-type map (open water, drift, landfast, glacier ice).
+Works year-round regardless of cloud cover or polar night.
+
+**Fusion:**
+For each S1 image, the nearest S2 scene within ±12 days is used where cloud-free pixels
+exist; S1 classification fills all remaining gaps.
 
 ### Climate correlation
 
