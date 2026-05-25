@@ -1,80 +1,101 @@
 # Work Packages — Sermilik Fjord Sea Ice Detection
 
-## WP1 — Study Area & Data Acquisition (1–2 weeks)
+The project is split into two parallel classification tracks that share data acquisition
+and merge at the time series stage.
+
+---
+
+## WP1 — Study Area & Data Acquisition (shared)
 **Notebook:** `01_data_acquisition.ipynb`
 
-- [ ] Define and load AOI shapefile
-- [ ] Set date range 2019–2024
-- [ ] Filter S2 collection (cloud cover < 80 %)
-- [ ] Filter S1 collection (IW mode, VV polarisation)
-- [ ] Filter ERA5 collection (T2m, u10, v10)
-- [ ] Verify collection sizes and visualise AOI
+- [x] Define and load AOI shapefile
+- [x] Set date range 2019–2024
+- [x] Filter S2 collection (cloud cover < 80 %)
+- [x] Filter S1 collection (IW mode, HH + HV dual-pol)
+- [x] Filter ERA5 collection (T2m, u10, v10)
+- [x] Verify collection sizes and visualise AOI
 
 ---
 
-## WP2 — Pre-processing & Harmonisation (2 weeks)
-**Notebook:** `02_preprocessing.ipynb`
+## WP2a — Sentinel-2 Pre-processing (Optical Track)
+**Notebook:** `02a_preprocessing_s2.ipynb` — **Owner: colleague**
 
 - [ ] Apply QA60 cloud mask to S2
+- [ ] Scale to surface reflectance [0–1]
 - [ ] Compute NDSI = (B3 – B11) / (B3 + B11)
-- [ ] Apply focal-mean speckle filter to S1 VV/VH
-- [ ] Visually inspect a sample image from each collection
+- [ ] Visually inspect a sample image
 
 ---
 
-## WP3 — Sea Ice Classification (2–3 weeks)
-**Notebook:** `03_classification.ipynb`
+## WP2b — Sentinel-1 Pre-processing (SAR / Hornsund Track)
+**Notebook:** `02b_preprocessing_s1.ipynb` — **Owner: Julian**
 
-- [ ] NDSI threshold classification (NDSI ≥ 0.4 → ice)
-- [ ] Digitise training polygons (4 classes: ice, water, mélange, land)
-- [ ] Upload training FeatureCollection to GEE
-- [ ] Train Random Forest (100 trees) on S2 bands + NDSI
+- [ ] Load S1 dual-pol collection (fix HH-only images with `filter_dual_pol`)
+- [ ] Apply focal-mean speckle filter (50 m radius)
+- [ ] Compute GLCM texture features (variance, contrast, entropy, ASM) on HH and HV
+- [ ] Build 10-band composite per image
+- [ ] Visually inspect backscatter and GLCM bands
+
+---
+
+## WP3a — Optical Ice Classification (Optical Track)
+**Notebook:** `03a_classification_s2.ipynb` — **Owner: colleague**
+
+- [ ] NDSI threshold classification (NDSI ≥ 0.4 → ice), output band: `ice_s2`
+- [ ] Digitise training polygons (4 classes: 0 open water, 1 drift, 2 landfast, 3 glacier)
+- [ ] Upload training FeatureCollection to GEE as asset
+- [ ] **Share asset path with Julian** (required for SVM training in WP3b)
+- [ ] Train Random Forest on S2 bands + NDSI
 - [ ] Apply RF to S2 collection
-- [ ] Apply VV ≥ –15 dB threshold to S1 collection
-- [ ] Implement temporal join between S1 and S2
-- [ ] Implement per-pixel fusion (S2 where valid, S1 otherwise)
 
 ---
 
-## WP4 — Time Series Analysis (1–2 weeks)
+## WP3b — SAR Ice Classification — Hornsund Method (SAR Track)
+**Notebook:** `03b_classification_s1.ipynb` — **Owner: Julian**
+
+Implements Williams & Swirad (2025) GLCM + SVM pipeline.
+
+- [ ] Receive training polygon GEE asset path from colleague (WP3a dependency)
+- [ ] Sample training pixels from 10-band GLCM composite
+- [ ] Train SVM (RBF kernel) — 40/60 train/test split, stratified by season
+- [ ] Classify S1 collection → multi-class ice-type map (`ice_type_s1`)
+- [ ] Collapse to binary (`ice_s1`) for time series fusion
+- [ ] *Deferred:* geometric reclassification (object orientation/roundness) in Python post-processing
+
+---
+
+## WP4 — Time Series & Fusion (shared)
 **Notebook:** `04_timeseries.ipynb`
 
+- [ ] Temporal join: for each S1 image, find nearest S2 image within ±12 days
+- [ ] Fusion: use `ice_s2` where S2 is cloud-free, `ice_s1` otherwise
 - [ ] Compute per-image ice area (km²) from fused classification
 - [ ] Export time series to `outputs/csv/ice_area_timeseries.csv`
-- [ ] Plot full time series 2019–2024
-- [ ] Compute and overlay 30-day rolling mean
-- [ ] Flag anomalies (> 2σ from rolling mean)
+- [ ] Plot full time series 2019–2024 with 30-day rolling mean
 - [ ] Compute seasonal and inter-annual statistics
 
 ---
 
-## WP5 — Climate Comparison (1–2 weeks)
+## WP5 — Climate Comparison (shared)
 **Notebook:** `05_climate_analysis.ipynb`
 
 - [ ] Extract ERA5 T2m and wind speed means over AOI
-- [ ] Export to `outputs/csv/era5_timeseries.csv`
 - [ ] Merge ERA5 and ice area time series
 - [ ] Compute Pearson correlation (ice area vs T2m; ice area vs wind speed)
-- [ ] Compute cross-correlation function (CCF) for lag –30 to +30 days
-- [ ] Produce scatter plot and CCF figure
+- [ ] Compute cross-correlation function (lag –30 to +30 days)
 
 ---
 
-## WP6 — Validation & Accuracy Assessment (1 week)
+## WP6 — Validation & Accuracy Assessment
 **Notebook:** `06_validation.ipynb`
 
-- [ ] Collect reference points from NICFI Planet basemaps or DMI ice charts
-- [ ] Upload validation FeatureCollection to GEE
-- [ ] Extract predicted class at each validation point
-- [ ] Compute confusion matrix (4 classes)
-- [ ] Report overall accuracy, per-class F1, and Cohen's kappa
-- [ ] Export confusion matrix figure
+- [ ] Collect reference points (DMI ice charts or NICFI Planet basemaps)
+- [ ] Compute confusion matrix for both S1 and S2 classifiers
+- [ ] Report overall accuracy, per-class F1, Cohen's kappa
 
 ---
 
-## WP7 — Writing & Visualisation (2 weeks)
-
-- [ ] Draft methods section (data sources, classification, validation)
-- [ ] Produce final publication-quality figures
-- [ ] Write results and discussion
-- [ ] Finalise references
+## WP7 — Writing & Visualisation
+- [ ] Methods section (data sources, classification, validation)
+- [ ] Final publication-quality figures
+- [ ] Results and discussion
