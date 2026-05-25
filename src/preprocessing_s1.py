@@ -42,10 +42,12 @@ def compute_glcm_features(image: ee.Image, size: int = GLCM_SIZE) -> ee.Image:
     –30 to 0) are scaled to non-negative integers before computation.
     """
     def _glcm_for_band(band_name: str) -> ee.Image:
+        # Shift range [-50, 0] dB → [0, 500] integers.
+        # multiply(10).add(300) would go negative for HV (often down to -35 dB).
         scaled = (
             image.select(band_name)
+            .add(50)
             .multiply(10)
-            .add(300)
             .toInt()
             .rename(band_name)
         )
