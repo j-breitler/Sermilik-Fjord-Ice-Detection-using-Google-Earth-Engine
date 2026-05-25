@@ -271,10 +271,25 @@ Make sure you are logged in with the account that has access to the
 Create a new script and paste the following. This loads S2 and S1 reference
 layers for both a winter and summer scene.
 
+**AOI — two options (pick one):**
+
+*Option A — exact fjord boundary (recommended):* upload `data/aoi/Sermilik_Fjord_Boundary.geojson`
+to GEE as a FeatureCollection asset first (Assets tab → New → Shape files / GeoJSON),
+then reference it by path:
+```javascript
+var aoi = ee.FeatureCollection('projects/sea-ice-sermilik-fjord/assets/Sermilik_Fjord_Boundary').geometry();
+```
+
+*Option B — bounding box fallback:* use the correct WGS84 extent derived from the GeoJSON:
+```javascript
+var aoi = ee.Geometry.Rectangle([-38.4337, 65.6222, -36.6462, 66.4792]);
+```
+
 ```javascript
 // --- Sermilik training polygon reference script ---
 
-var aoi = ee.Geometry.Rectangle([-41.5, 65.5, -35.0, 66.7]);
+// Paste your chosen aoi definition here (Option A or B above)
+var aoi = ee.Geometry.Rectangle([-38.4337, 65.6222, -36.6462, 66.4792]);
 
 // ---------- WINTER ----------
 var s2_winter = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
